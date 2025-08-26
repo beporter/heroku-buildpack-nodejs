@@ -7,6 +7,8 @@ get_os() {
 get_cpu() {
   if [[ "$(uname -p)" = "i686" ]]; then
     echo "x86"
+  elif [[ "$(uname -p)" = "aarch64" ]]; then
+    echo "arm64"
   else
     echo "x64"
   fi

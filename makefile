@@ -6,9 +6,20 @@ build-resolver-darwin: .build
 	cargo install heroku-nodejs-utils --root .build --bin resolve_version --git https://github.com/heroku/buildpacks-nodejs --target x86_64-apple-darwin --profile release
 	mv .build/bin/resolve_version lib/vendor/resolve-version-darwin
 
-build-resolver-linux: .build
-	cargo install heroku-nodejs-utils --root .build --bin resolve_version --git https://github.com/heroku/buildpacks-nodejs --target x86_64-unknown-linux-musl --profile release
-	mv .build/bin/resolve_version lib/vendor/resolve-version-linux
+# `cross` doesn't support the `install` command, so approximate it:
+buildpacks-nodejs: .build/buildpacks-nodejs
+	rm -rf .build/buildpacks-nodejs
+	git clone https://github.com/heroku/buildpacks-nodejs .build/buildpacks-nodejs
+
+build-resolver-linux: .build buildpacks-nodejs
+	cd .build/buildpacks-nodejs && \
+		CROSS_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_IMAGE_TOOLCHAIN="aarch64-unknown-linux-gnu" \
+		CROSS_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_IMAGE="ahuszagh/aarch64-cross:aarch64-unknown-linux-musl" \
+		cross build \
+		--bin resolve_version \
+		--target aarch64-unknown-linux-musl \
+		--release -vv
+	mv .build/buildpacks-nodejs/target/aarch64-unknown-linux-musl/release/resolve_version lib/vendor/resolve-version-linux
 
 test: heroku-22-build heroku-24-build
 
