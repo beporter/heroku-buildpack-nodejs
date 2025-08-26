@@ -3,7 +3,7 @@ build-resolvers: build-resolver-linux build-resolver-darwin
 .build:
 	mkdir -p .build
 build-resolver-darwin: .build
-	cargo install heroku-nodejs-utils --root .build --bin resolve_version --git https://github.com/heroku/buildpacks-nodejs --target x86_64-apple-darwin --profile release
+	cargo install heroku-nodejs-utils --root .build --bin resolve_version --git https://github.com/heroku/buildpacks-nodejs --target aarch64-apple-darwin --profile release
 	mv .build/bin/resolve_version lib/vendor/resolve-version-darwin
 
 # `cross` doesn't support the `install` command, so approximate it:
@@ -21,6 +21,13 @@ build-resolver-linux: .build buildpacks-nodejs
 		--release -vv
 	mv .build/buildpacks-nodejs/target/aarch64-unknown-linux-musl/release/resolve_version lib/vendor/resolve-version-linux
 
+build-inventory: 
+	cargo install heroku-nodejs-utils \
+		--bin update_node_inventory \
+		--git https://github.com/heroku/buildpacks-nodejs
+	update_node_inventory ./inventory/node.toml ./CHANGELOG.md \
+		--platform linux-arm64 \
+		--format classic
 test: heroku-22-build heroku-24-build
 
 test-binary:
@@ -34,7 +41,7 @@ shellcheck:
 
 heroku-24-build:
 	@echo "Running tests in docker (heroku-24-build)..."
-	@docker run --platform "linux/amd64" -v $(shell pwd):/buildpack:ro --rm -it -e "STACK=heroku-24" heroku/heroku:24-build bash -c 'cp -r /buildpack ~/buildpack_test; cd ~/buildpack_test/; test/run;'
+	@docker run --platform "linux/arm64" -v $(shell pwd):/buildpack:ro --rm -it -e "STACK=heroku-24" heroku/heroku:24-build bash -c 'cp -r /buildpack ~/buildpack_test; cd ~/buildpack_test/; test/run;'
 	@echo ""
 
 heroku-22-build:
